@@ -1,0 +1,93 @@
+#버전: 1.2.1, 지원 MC 버전: 1.8 ~ 1.14.4, 스크립트 2.2이상 지원, 요구 에드온: Skellett
+
+options:
+	perfix : &f&l[&c&l!&f&l] &8:: &f
+
+variables:
+	start.money = 500
+
+on join:
+	if file existence of "plugins/Skript/Money/UserData/%player%.yaml" is false:
+		set {_dir} to "plugins/Skript/Money/UserData/%player%.yaml"
+		set yaml value "UserData.Name" from {_dir} to "%player%"
+		set yaml value "UserData.UUID" from {_dir} to player's uuid
+		set yaml value "UserData.IP" from {_dir} to player's ip
+		set yaml value "UserData.Money" from {_dir} to {start.money}
+
+function getMoney(target: text) :: number:
+	if file existence of "plugins/Skript/Money/UserData/%{_target}%.yaml" is true:
+		set {_dir} to "plugins/Skript/Money/UserData/%{_target}%.yaml"
+		set {_money} to yaml value "UserData.Money" from {_dir}
+	return {_money}
+
+function setMoneyUnit(n: number) :: text:
+	set {_t} to "%{_n}%"
+	loop round up length of {_t} / 3 times:
+		set {_l} to last 3 characters of {_t}
+		set {_t} to first length of {_t} - 3 characters of {_t}
+		if loop-number = 1:
+			set {_r} to "%{_l}%"
+		else:
+			set {_r} to "%{_l}%,%{_r}%" 
+	return {_r}
+
+function setMoney(target: text, value: text):
+	set {_dir} to "plugins/Skript/Money/UserData/%{_target}%.yaml"
+	if "%{_value}%" contains uncolored "+":
+		replace all "+" with "" in {_value}
+		set yaml value "UserData.Money" from {_dir} to getMoney({_target}) + {_value} parsed as number
+	else if "%{_value}%" contains uncolored "-":
+		replace all "-" with "" in {_value}
+		set yaml value "UserData.Money" from {_dir} to getMoney({_target}) - {_value} parsed as number
+	else:
+		set yaml value "UserData.Money" from {_dir} to {_value} parsed as number
+
+command 돈 [<TEXT="확인">] [<TEXT>] [<TEXT>]:
+	trigger:
+		if arg 1 is "도움말":
+			if player is op:
+				send "{@perfix} /돈 확인 [플레이어] :: 해당 플레이어의 소지금을 확인합니다." to player
+				send "{@perfix} /돈 설정 [플레이어] [금액] :: 해당 플레이어의 소지금을 설정합니다." to player
+			if player is not op:
+				send "{@perfix} /돈 확인 :: 자신의 소지금을 확인합니다." to player
+				send "{@perfix} /돈 보내기 [플레이어] [금액] :: 해당 플레이어에게 돈을 보냅니다." to player
+
+		if arg 1 is "확인":
+			if arg 2 is not set:
+				send "{@perfix} 소지금: %setMoneyUnit(getMoney(player's name))%원" to player
+			if arg 2 is set:
+				if player is not op:
+					send "{@perfix} 다른사람의 소지금을 확인 할 권한이 없습니다!" to player
+				if player is op:
+					send "{@perfix} %arg-2%님의 소지금: %setMoneyUnit(getMoney(arg-2))%원" to player
+
+		if arg 1 is "설정":
+			if player is not op:
+				send "{@perfix} 해당 명령어를 사용 할 권한이 없습니다!" to player
+			if player is op:
+				if arg 2 is not set:
+					send "{@perfix} 설정할 플레이어를 입력해주세요!" to player
+				if arg 2 is set:
+					if arg 3 is not set:
+						send "{@perfix} 설정할 금액을 입력해주세요!" to player
+					if arg 3 is set:
+						setMoney("%arg 2 parsed as player%", arg 3)
+						send "{@perfix} %arg 2%님의 소지금을 %arg 3%으로 설정했습니다. ( %arg 2%님의 소지금: %setMoneyUnit(getMoney(arg 2))%원 )" to player
+						send "{@perfix} 관리자에 의해 소지금이 변동되었습니다. ( 소지금: %setMoneyUnit(getMoney(arg 2))%원 )" to arg 2 parsed as player
+
+		if arg 1 is "보내기":	
+			if arg 2 is not set:
+				send "{@perfix} 보내실 플레이어를 입력해주세요!" to player
+			if arg 2 is set:
+				if arg 3 is not set:
+					send "{@perfix} 보내실 금액을 입력해주세요!" to player
+				if arg 3 is set:
+					if arg 3 parsed as number <= getMoney(player's name):
+						setMoney("%player%", "-%arg 3%")
+						setMoney("%arg 2 parsed as player%", "+%arg 3%")
+						send "{@perfix} %arg 2%님에게 %setMoneyUnit(arg 3 parsed as int)%원을 보냈습니다! ( 현재 소지금: %setMoneyUnit(getMoney(player's name))%원 )" to player
+						send "{@perfix} %player's name%님에게 %setMoneyUnit(arg 3 parsed as int)%원을 받았습니다! ( 현재 소지금: %setMoneyUnit(getMoney(arg 2))%원 )" to arg 2 parsed as player
+						stop
+					if arg 3 parsed as number > getMoney(player's name):
+						send "{@perfix} 소지금이 부족합니다! ( 현재 소지금: %setMoneyUnit(getMoney(player's name))%원 )"
+						stop
