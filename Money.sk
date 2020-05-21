@@ -87,7 +87,7 @@ command 수표 [<TEXT="도움말">] [<NUMBER>] [<NUMBER>]:
 					send "{@perfix} 소지금이 부족합니다! ( 현재 소지금: %setMoneyUnit(getMoney(player))%원 )" to player
 					stop
 
-			give arg 3 of paper named "&f&l[&c&l 수표 &8:: &f%setMoneyUnit(arg 2 * arg 3)%원 &f&l]" to player
+			give arg 3 of paper named "&f&l[&c&l 수표 &8:: &f%setMoneyUnit(arg 2)%원 &f&l]" to player
 			setMoney(player, "-%arg 2 * arg 3%")
 
 
